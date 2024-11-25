@@ -30,6 +30,10 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    phoneNumber: {
+      type: DataTypes.STRING,
+      allowNull: true, // Membuat field ini opsional
+    },
   },
   {
     sequelize, // Koneksi dari Sequelize

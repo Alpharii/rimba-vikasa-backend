@@ -3,22 +3,53 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import {User} from '../models/User';
+import { validationResult } from 'express-validator';
 
-export const register = async (req: Request, res: Response) => {
+
+export const register = async (req: Request, res: Response) : Promise<void> => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, phoneNumber } = req.body;
 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({
+        requestId: uuidv4(),
+        data: null,
+        message: errors.array(),
+        success: false,
+      });
+      return;
+    }
+
+    // Cek apakah email sudah ada
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      res.status(409).json({
+        requestId: uuidv4(),
+        data: null,
+        message: "Email sudah terdaftar",
+        success: false,
+      });
+      return;
+    }
+
+    // Hash password dan buat pengguna baru
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword, name });
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      name,
+      phoneNumber,
+    });
 
-    res.json({
+    res.status(201).json({
       requestId: uuidv4(),
       data: user,
       message: null,
       success: true,
     });
   } catch (error: any) {
-    res.status(400).json({
+    res.status(500).json({
       requestId: uuidv4(),
       data: null,
       message: error.message,
@@ -26,6 +57,7 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 export const login = async (req: Request, res: Response) => {
   try {
